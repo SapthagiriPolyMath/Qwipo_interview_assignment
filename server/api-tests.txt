@@ -1,0 +1,315 @@
+# Qwipo API Test Cases
+# Endpoint: POST /api/customers
+# Purpose: Validate customer creation, input validation, and uniqueness constraint
+
+---
+
+## ✅ Test 1: Create New Customer (Valid Input)
+curl -X POST http://localhost:5000/api/customers ^
+  -H "Content-Type: application/json" ^
+  -d "{\"first_name\":\"Arjun\",\"last_name\":\"Rajan\",\"phone_number\":\"9280206123\"}"
+# Expected: 201 Created
+# Response: { "message": "Customer created successfully", "customer_id": <number> }
+
+---
+
+## ❌ Test 2: Missing First Name
+curl -X POST http://localhost:5000/api/customers ^
+  -H "Content-Type: application/json" ^
+  -d "{\"last_name\":\"Rajan\",\"phone_number\":\"9280206123\"}"
+# Expected: 400 Bad Request
+# Response: { "error": "All fields are required." }
+
+---
+
+## ❌ Test 3: Missing Phone Number
+curl -X POST http://localhost:5000/api/customers ^
+  -H "Content-Type: application/json" ^
+  -d "{\"first_name\":\"Arjun\",\"last_name\":\"Rajan\"}"
+# Expected: 400 Bad Request
+# Response: { "error": "All fields are required." }
+
+---
+
+## ❌ Test 4: Duplicate Phone Number
+curl -X POST http://localhost:5000/api/customers ^
+  -H "Content-Type: application/json" ^
+  -d "{\"first_name\":\"Arjun\",\"last_name\":\"Rajan\",\"phone_number\":\"9280206123\"}"
+# Expected: 409 Conflict
+# Response: { "error": "Phone number already exists." }
+
+---
+
+## ✅ Test 5: Create Another Unique Customer
+curl -X POST http://localhost:5000/api/customers ^
+  -H "Content-Type: application/json" ^
+  -d "{\"first_name\":\"Sneha\",\"last_name\":\"Kumar\",\"phone_number\":\"9433819756\"}"
+# Expected: 201 Created
+# Response: { "message": "Customer created successfully", "customer_id": <number> }
+
+---
+
+# Notes:
+# - Use ^ for line continuation in Windows CMD
+# - Ensure Content-Type is set to application/json
+# - Phone number must be unique across all customers
+# - All fields are required: first_name, last_name, phone_number
+
+
+# Qwipo API Test Cases
+# Endpoint: GET /api/customers
+# Purpose: Validate search, pagination, sorting, and error handling
+
+---
+
+## ✅ Test 1: Basic Fetch (Default Sort by First Name)
+curl "http://localhost:5000/api/customers"
+# Expected: First 5 customers sorted by first_name ASC
+# Response includes: total count and customer list
+
+---
+
+## ✅ Test 2: Search by City (Before JOIN Fix)
+curl "http://localhost:5000/api/customers?search=Chennai"
+# Expected: Error due to missing 'city' column in customers table
+# Response: {"error":"SQLITE_ERROR: no such column: city"}
+
+---
+
+## ✅ Test 3: Search by City with Sorting and Pagination (After JOIN Fix)
+curl "http://localhost:5000/api/customers?search=Chennai&sortBy=last_name&sortOrder=DESC&limit=5&offset=0"
+# Expected: First 5 customers matching 'Chennai', sorted by last_name DESC
+# Response includes: total = 7, data = 5 customers
+
+---
+
+## ✅ Test 5: Search + Sort + Pagination (Valid)
+curl "http://localhost:5000/api/customers?search=Chennai&sortBy=last_name&sortOrder=DESC&limit=10&offset=0"
+# Expected: All 7 matching customers returned (limit = 10)
+# Response includes: total = 7, data = 7 customers
+
+---
+
+## ✅ Test 6: Large Limit (No Truncation)
+curl "http://localhost:5000/api/customers?search=Chennai&sortBy=last_name&sortOrder=DESC&limit=150&offset=0"
+# Expected: Same 7 customers returned, no truncation
+# Useful for testing upper bounds
+
+---
+
+## ✅ Test 7: Pagination Offset (Page 2)
+curl "http://localhost:5000/api/customers?search=Chennai&sortBy=last_name&sortOrder=DESC&limit=5&offset=5"
+# Expected: Remaining 2 customers from total 7
+# Response includes: data = 2 customers
+
+---
+
+# Notes:
+# - All search terms are case-insensitive by default in SQLite
+# - Sorting fields are validated against a whitelist (id, first_name, last_name)
+# - Pagination uses LIMIT and OFFSET
+# - JOIN with addresses table is required for city/state/pincode search
+
+
+# Qwipo API Test Cases
+# Endpoint: GET /api/customers/:id
+# Purpose: Fetch single customer with linked addresses and "onlyOneAddress" flag
+
+---
+
+## ✅ Test 1: Valid Customer ID with Addresses
+curl http://localhost:5000/api/customers/2
+# Expected: JSON with:
+# - customer object
+# - addresses array
+# - onlyOneAddress: true or false
+
+---
+
+## ❌ Test 2: Invalid Customer ID
+curl http://localhost:5000/api/customers/999
+# Expected: 404 Not Found
+# Response: { "error": "Customer not found" }
+
+---
+
+# Notes:
+# - This route powers the CustomerDetailPage
+# - Combines customer + address data in one response
+# - Flag "onlyOneAddress" is computed from address count
+
+
+# Qwipo API Test Cases
+# Endpoint: POST /api/customers/:id/addresses
+# Purpose: Add a new address for a specific customer
+
+---
+
+## ✅ Test: Add Address for Customer ID 2
+curl -X POST http://localhost:5000/api/customers/2/addresses ^
+  -H "Content-Type: application/json" ^
+  -d "{\"address_details\":\"Street 1, Block 8\",\"city\":\"Chennai\",\"state\":\"KA\",\"pin_code\":\"110001\"}"
+
+# Expected: 201 Created
+# Response: { "message": "Address added successfully", "address_id": <number> }
+
+---
+
+## ❌ Test: Missing Fields
+curl -X POST http://localhost:5000/api/customers/2/addresses ^
+  -H "Content-Type: application/json" ^
+  -d "{\"city\":\"Chennai\",\"state\":\"KA\"}"
+
+# Expected: 400 Bad Request
+# Response: { "error": "All address fields are required." }
+
+---
+
+## ❌ Test: Invalid Customer ID
+curl -X POST http://localhost:5000/api/customers/999/addresses ^
+  -H "Content-Type: application/json" ^
+  -d "{\"address_details\":\"Street 1\",\"city\":\"Chennai\",\"state\":\"KA\",\"pin_code\":\"110001\"}"
+
+# Expected: 404 Not Found
+# Response: { "error": "Customer not found." }
+
+---
+
+# Notes:
+# - All fields are required: address_details, city, state, pin_code
+# - Customer ID must exist
+# - Response includes address_id for linking or confirmation
+
+# Qwipo API Test Cases
+# Endpoint: PUT /api/customers/:id
+# Purpose: Update customer profile fields
+
+---
+
+## ✅ Test: Update Customer ID 2
+curl -X PUT http://localhost:5000/api/customers/2 ^
+  -H "Content-Type: application/json" ^
+  -d "{\"first_name\":\"Arjun\",\"last_name\":\"Rajan\",\"phone_number\":\"9280206123\"}"
+# Expected: 200 OK
+# Response: { "message": "Customer updated successfully" }
+
+---
+
+## ❌ Test: Missing Fields
+curl -X PUT http://localhost:5000/api/customers/2 ^
+  -H "Content-Type: application/json" ^
+  -d "{\"first_name\":\"Arjun\"}"
+# Expected: 400 Bad Request
+# Response: { "error": "All fields are required." }
+
+---
+
+## ❌ Test: Non-existent Customer
+curl -X PUT http://localhost:5000/api/customers/999 ^
+  -H "Content-Type: application/json" ^
+  -d "{\"first_name\":\"Test\",\"last_name\":\"User\",\"phone_number\":\"9999999999\"}"
+# Expected: 404 Not Found
+# Response: { "error": "Customer not found." }
+
+---
+
+## ❌ Test: Duplicate Phone Number
+curl -X PUT http://localhost:5000/api/customers/2 ^
+  -H "Content-Type: application/json" ^
+  -d "{\"first_name\":\"Arjun\",\"last_name\":\"Rajan\",\"phone_number\":\"9433819756\"}"
+# Expected: 409 Conflict
+# Response: { "error": "Phone number already exists." }
+
+---
+
+# Notes:
+# - All fields are required
+# - Phone number must remain unique
+
+
+# Qwipo API Test Cases
+# Endpoint: PUT /api/addresses/:addressId
+# Purpose: Update address details
+
+---
+
+## ✅ Test: Update Address ID 8
+curl -X PUT http://localhost:5000/api/addresses/8 ^
+  -H "Content-Type: application/json" ^
+  -d "{\"address_details\":\"New Street 99\",\"city\":\"Chennai\",\"state\":\"TN\",\"pin_code\":\"600002\"}"
+# Expected: 200 OK
+# Response: { "message": "Address updated successfully" }
+
+---
+
+## ❌ Test: Missing Fields
+curl -X PUT http://localhost:5000/api/addresses/8 ^
+  -H "Content-Type: application/json" ^
+  -d "{\"city\":\"Chennai\"}"
+# Expected: 400 Bad Request
+# Response: { "error": "All fields are required." }
+
+---
+
+## ❌ Test: Non-existent Address
+curl -X PUT http://localhost:5000/api/addresses/999 ^
+  -H "Content-Type: application/json" ^
+  -d "{\"address_details\":\"Fake\",\"city\":\"Nowhere\",\"state\":\"ZZ\",\"pin_code\":\"000000\"}"
+# Expected: 404 Not Found
+# Response: { "error": "Address not found." }
+
+---
+
+# Notes:
+# - All fields are required
+# - Address ID must exist
+
+
+# Qwipo API Test Cases
+# Endpoint: DELETE /api/customers/:id
+# Purpose: Remove a customer
+
+---
+
+## ✅ Test: Delete Customer ID 2
+curl -X DELETE http://localhost:5000/api/customers/2
+# Expected: 200 OK
+# Response: { "message": "Customer deleted successfully" }
+
+---
+
+## ❌ Test: Non-existent Customer
+curl -X DELETE http://localhost:5000/api/customers/999
+# Expected: 404 Not Found
+# Response: { "error": "Customer not found." }
+
+---
+
+# Notes:
+# - Deletion is permanent unless soft-delete logic is added
+
+
+# Qwipo API Test Cases
+# Endpoint: DELETE /api/addresses/:addressId
+# Purpose: Remove a specific address
+
+---
+
+## ✅ Test: Delete Address ID 8
+curl -X DELETE http://localhost:5000/api/addresses/8
+# Expected: 200 OK
+# Response: { "message": "Address deleted successfully" }
+
+---
+
+## ❌ Test: Non-existent Address
+curl -X DELETE http://localhost:5000/api/addresses/999
+# Expected: 404 Not Found
+# Response: { "error": "Address not found." }
+
+---
+
+# Notes:
+# - Only deletes one address
+# - Safe against manual misuse
+

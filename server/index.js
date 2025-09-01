@@ -109,12 +109,220 @@ function seedMockData() {
   });
   
   app.get('/api/customers', (req, res) => {
-    const sql = `SELECT * FROM customers`;
-    db.all(sql, [], (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
+    const {
+      search = '',
+      sortBy = 'first_name',
+      sortOrder = 'ASC',
+      limit = 10,
+      offset = 0
+    } = req.query;
+  
+    // ✅ Whitelist allowed sort fields and directions
+    const allowedSortFields = ['id', 'first_name', 'last_name'];
+    const allowedSortOrders = ['ASC', 'DESC'];
+  
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'first_name';
+    const sortDirection = allowedSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'ASC';
+  
+    // ✅ SQL clauses
+    const joinClause = `
+      FROM customers c
+      LEFT JOIN addresses a ON c.id = a.customer_id
+    `;
+  
+    const whereClause = search
+      ? `WHERE
+          c.first_name LIKE ? OR
+          c.last_name LIKE ? OR
+          c.phone_number LIKE ? OR
+          a.city LIKE ? OR
+          a.state LIKE ? OR
+          a.pin_code LIKE ?`
+      : '';
+  
+    const countSql = `
+      SELECT COUNT(DISTINCT c.id) AS total
+      ${joinClause}
+      ${whereClause}
+    `;
+  
+    const dataSql = `
+      SELECT DISTINCT c.*
+      ${joinClause}
+      ${whereClause}
+      ORDER BY c.${sortField} ${sortDirection}
+      LIMIT ? OFFSET ?
+    `;
+  
+    const searchParams = search
+      ? [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`]
+      : [];
+  
+    const dataParams = [...searchParams, limit, offset];
+  
+    db.get(countSql, searchParams, (err, countRow) => {
+      if (err) return res.status(500).json({ error: err.message });
+  
+      db.all(dataSql, dataParams, (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+  
+        res.json({
+          total: countRow.total,
+          data: rows
+        });
+      });
+    });
+  });
+  
+  app.get('/api/customers/:id', (req, res) => {
+    const { id } = req.params;
+  
+    const customerSql = `SELECT * FROM customers WHERE id = ?`;
+    const addressSql = `SELECT * FROM addresses WHERE customer_id = ?`;
+    const countSql = `SELECT COUNT(*) AS count FROM addresses WHERE customer_id = ?`;
+  
+    db.get(customerSql, [id], (err, customer) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!customer) return res.status(404).json({ error: 'Customer not found' });
+  
+      db.all(addressSql, [id], (err, addresses) => {
+        if (err) return res.status(500).json({ error: err.message });
+  
+        db.get(countSql, [id], (err, countRow) => {
+          if (err) return res.status(500).json({ error: err.message });
+  
+          res.json({
+            customer,
+            addresses,
+            onlyOneAddress: countRow.count === 1
+          });
+        });
+      });
+    });
+  });                                                 
+
+  app.post('/api/customers/:id/addresses', (req, res) => {
+    const { id } = req.params;
+    const { address_details, city, state, pin_code } = req.body;
+  
+    // Basic validation
+    if (!address_details || !city || !state || !pin_code) {
+      return res.status(400).json({ error: 'All address fields are required.' });
+    }
+  
+    // Check if customer exists
+    const checkCustomerSql = `SELECT * FROM customers WHERE id = ?`;
+    db.get(checkCustomerSql, [id], (err, customer) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!customer) return res.status(404).json({ error: 'Customer not found.' });
+  
+      // Insert address
+      const insertSql = `
+        INSERT INTO addresses (customer_id, address_details, city, state, pin_code)
+        VALUES (?, ?, ?, ?, ?)
+      `;
+      const params = [id, address_details, city, state, pin_code];
+  
+      db.run(insertSql, params, function (err) {
+        if (err) return res.status(500).json({ error: 'Failed to add address.' });
+  
+        res.status(201).json({
+          message: 'Address added successfully',
+          address_id: this.lastID
+        });
+      });
+    });
+  });
+
+
+  app.put('/api/addresses/:addressId', (req, res) => {
+    const { addressId } = req.params;
+    const { address_details, city, state, pin_code } = req.body;
+  
+    if (!address_details || !city || !state || !pin_code) {
+      return res.status(400).json({ error: 'All fields are required.' });
+    }
+  
+    const sql = `
+      UPDATE addresses
+      SET address_details = ?, city = ?, state = ?, pin_code = ?
+      WHERE id = ?
+    `;
+    const params = [address_details, city, state, pin_code, addressId];
+  
+    db.run(sql, params, function (err) {
+      if (err) return res.status(500).json({ error: 'Internal server error.' });
+  
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Address not found.' });
       }
-      res.json({ data: rows });
+  
+      res.json({ message: 'Address updated successfully' });
+    });
+  });
+  
+  app.put('/api/customers/:id', (req, res) => {
+    const { id } = req.params;
+    const { first_name, last_name, phone_number } = req.body;
+  
+    if (!first_name || !last_name || !phone_number) {
+      return res.status(400).json({ error: 'All fields are required.' });
+    }
+  
+    const sql = `
+      UPDATE customers
+      SET first_name = ?, last_name = ?, phone_number = ?
+      WHERE id = ?
+    `;
+    const params = [first_name, last_name, phone_number, id];
+  
+    db.run(sql, params, function (err) {
+      if (err) {
+        if (err.message.includes('UNIQUE constraint failed: customers.phone_number')) {
+          return res.status(409).json({ error: 'Phone number already registered with another account.' });
+        }
+        return res.status(500).json({ error: 'Internal server error.' });
+      }
+  
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Customer not found.' });
+      }
+  
+      res.json({ message: 'Customer updated successfully' });
+    });
+  });
+  
+
+  app.delete('/api/customers/:id', (req, res) => {
+    const { id } = req.params;
+  
+    const sql = `DELETE FROM customers WHERE id = ?`;
+  
+    db.run(sql, [id], function (err) {
+      if (err) return res.status(500).json({ error: 'Internal server error.' });
+  
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Customer not found.' });
+      }
+  
+      res.json({ message: 'Customer deleted successfully' });
+    });
+  });
+
+  
+  app.delete('/api/addresses/:addressId', (req, res) => {
+    const { addressId } = req.params;
+  
+    const sql = `DELETE FROM addresses WHERE id = ?`;
+  
+    db.run(sql, [addressId], function (err) {
+      if (err) return res.status(500).json({ error: 'Internal server error.' });
+  
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Address not found.' });
+      }
+  
+      res.json({ message: 'Address deleted successfully' });
     });
   });
   
