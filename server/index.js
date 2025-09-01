@@ -14,6 +14,9 @@ const db = new sqlite3.Database('./database.db', (err) => {
     }
   });
 
+  // Enable foreign key constraints
+  db.run('PRAGMA foreign_keys = ON');
+
   db.run(`
     CREATE TABLE IF NOT EXISTS customers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -31,7 +34,7 @@ const db = new sqlite3.Database('./database.db', (err) => {
       city TEXT NOT NULL,
       state TEXT NOT NULL,
       pin_code TEXT NOT NULL,
-      FOREIGN KEY (customer_id) REFERENCES customers(id)
+      FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
     )
   `);
 
@@ -80,7 +83,7 @@ function seedMockData() {
   }
   
   // Uncomment to run once
-  //seedMockData();
+  // seedMockData();
   
 
   app.post('/api/customers', (req, res) => {
@@ -298,15 +301,15 @@ function seedMockData() {
   
     const sql = `DELETE FROM customers WHERE id = ?`;
   
-    db.run(sql, [id], function (err) {
-      if (err) return res.status(500).json({ error: 'Internal server error.' });
-  
-      if (this.changes === 0) {
-        return res.status(404).json({ error: 'Customer not found.' });
-      }
-  
-      res.json({ message: 'Customer deleted successfully' });
+    db.run(`DELETE FROM addresses WHERE customer_id = ?`, [id], function (err) {
+      if (err) return res.status(500).json({ error: 'Failed to delete addresses.' });
+    
+      db.run(`DELETE FROM customers WHERE id = ?`, [id], function (err) {
+        if (err) return res.status(500).json({ error: 'Failed to delete customer.' });
+        res.json({ message: 'Customer and addresses deleted successfully' });
+      });
     });
+    
   });
 
   
