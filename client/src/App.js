@@ -9,9 +9,9 @@ const App =()=> {
   return (
     <Routes>
       <Route path="/" element={<CustomerListPage />} />
-      {/*<Route path="/customers/:id" element={<CustomerDetailPage />} />
+      <Route path="/customers/:id" element={<CustomerDetailPage />} />
       <Route path="/customers/new" element={<CustomerFormPage />} />
-      <Route path="/customers/:id/edit" element={<CustomerFormPage />}/>*/}
+      <Route path="/customers/:id/edit" element={<CustomerFormPage />} />
     </Routes>
   );
 }

@@ -120,14 +120,12 @@ function seedMockData() {
       offset = 0
     } = req.query;
   
-    // ✅ Whitelist allowed sort fields and directions
     const allowedSortFields = ['id', 'first_name', 'last_name'];
     const allowedSortOrders = ['ASC', 'DESC'];
   
     const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'first_name';
     const sortDirection = allowedSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'ASC';
   
-    // ✅ SQL clauses
     const joinClause = `
       FROM customers c
       LEFT JOIN addresses a ON c.id = a.customer_id
@@ -143,23 +141,28 @@ function seedMockData() {
           a.pin_code LIKE ?`
       : '';
   
+    const searchParams = search
+      ? Array(6).fill(`%${search}%`)
+      : [];
+  
     const countSql = `
       SELECT COUNT(DISTINCT c.id) AS total
       ${joinClause}
       ${whereClause}
     `;
   
+    // ✅ Include address_count and onlyOneAddress in the list
     const dataSql = `
-      SELECT DISTINCT c.*
+      SELECT 
+        c.*,
+        COUNT(a.id) AS address_count,
+        CASE WHEN COUNT(a.id) = 1 THEN 1 ELSE 0 END AS onlyOneAddress
       ${joinClause}
       ${whereClause}
+      GROUP BY c.id
       ORDER BY c.${sortField} ${sortDirection}
       LIMIT ? OFFSET ?
     `;
-  
-    const searchParams = search
-      ? [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`]
-      : [];
   
     const dataParams = [...searchParams, limit, offset];
   
@@ -176,6 +179,7 @@ function seedMockData() {
       });
     });
   });
+  
   
   app.get('/api/customers/:id', (req, res) => {
     const { id } = req.params;
@@ -197,12 +201,15 @@ function seedMockData() {
           res.json({
             customer,
             addresses,
+            address_count: countRow.count,
             onlyOneAddress: countRow.count === 1
           });
         });
       });
     });
-  });                                                 
+  });
+  
+                                                   
 
   app.post('/api/customers/:id/addresses', (req, res) => {
     const { id } = req.params;

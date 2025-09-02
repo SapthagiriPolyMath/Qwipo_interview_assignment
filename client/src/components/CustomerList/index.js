@@ -1,4 +1,4 @@
-import { MdEdit } from "react-icons/md";
+import { MdEdit, MdLocalPhone, MdDeleteForever } from "react-icons/md";
 import {
   CustomerListWrapper,
   CustomerRow,
@@ -6,10 +6,12 @@ import {
   CustomerName,
   CustomerPhone,
   CustomerLink,
-  EditLink
+  EditLink,
+  DeleteButton,
+  AddressFlag,
 } from "./styledComponents";
 
-const CustomerList = ({ customer }) => {
+const CustomerList = ({ customer, onDelete }) => {
   if (!customer || customer.length === 0) {
     return <p>No customers to display</p>;
   }
@@ -22,13 +24,27 @@ const CustomerList = ({ customer }) => {
             <CustomerCard>
               <CustomerName>
                 {cust.first_name} {cust.last_name}
+                {cust.address_count === 1 && (
+                  <AddressFlag variant="one">Only one address</AddressFlag>
+                )}
+                {cust.address_count === 0 && (
+                  <AddressFlag variant="add">Add address</AddressFlag>
+                )}
               </CustomerName>
-              <CustomerPhone>{cust.phone_number}</CustomerPhone>
+              <CustomerPhone>
+                <MdLocalPhone size={16} color="#4fa94d" />
+                {cust.phone_number}
+              </CustomerPhone>
             </CustomerCard>
           </CustomerLink>
-          <EditLink to={`/customers/${cust.id}/edit`} title="Edit customer">
-            <MdEdit size={20} />
+
+          <EditLink to={`/customers/${cust.id}/edit`}>
+            <MdEdit />
           </EditLink>
+
+          <DeleteButton onClick={() => onDelete(cust)}>
+            <MdDeleteForever size={16} /> Delete
+          </DeleteButton>
         </CustomerRow>
       ))}
     </CustomerListWrapper>

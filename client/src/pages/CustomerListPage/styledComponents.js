@@ -1,21 +1,27 @@
 import styled from "styled-components";
+import { Link } from "react-router-dom";
 
 export const CustomerListContainer = styled.div`
   max-width: 900px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 0px 20px;
   font-family: Arial, sans-serif;
+  height: 100vh;
 `;
 
 export const AppLogoImg = styled.img`
   height: auto;
   width: 100px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  padding: 0px;
 `;
 
 export const CustomerListPageHeading = styled.h1`
   font-size: 24px;
   font-weight: bold;
   margin-bottom: 16px;
+  padding: 0px;
 `;
 
 export const SearchBar = styled.div`
@@ -95,4 +101,19 @@ export const SortSelect = styled.select`
 
 export const SortOption = styled.option`
   padding: 6px 10px;
+`;
+
+export const AddNewLink = styled(Link)`
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+`;
+
+export const AddCustomerButton = styled.button`
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: #4fa94d;
+  color: white;
+  cursor: pointer;  
 `;

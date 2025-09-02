@@ -1,11 +1,13 @@
-import styled from "styled-components";
+import styled, {css} from "styled-components";
 import { Link } from "react-router-dom";
 
 export const CustomerListWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 16px;
+  overflow-y: auto;
+  margin-top: 10px;
+  height: auto;
 `;
 
 export const CustomerRow = styled.div`
@@ -53,7 +55,7 @@ export const EditLink = styled(Link)`
   justify-content: center;
   padding: 6px;
   border-radius: 4px;
-  background-color: #f3f4f6;
+  background-color: #bababa;
   color: #374151;
   text-decoration: none;
   transition: background-color 0.2s ease;
@@ -61,4 +63,44 @@ export const EditLink = styled(Link)`
   &:hover {
     background-color: #e5e7eb;
   }
+`;
+
+export const DeleteButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  border: none;
+  margin: none;
+  color: #dc2626;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  background-color: transparent;
+  border-radius: 4px;
+
+  &:hover {
+    background-color: rgba(220, 38, 38, 0.5);
+  }
+`;
+
+export const AddressFlag = styled.span`
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  ${({ variant }) =>
+    variant === "one"
+      ? css`
+          background-color: #fef3c7;
+          color: #92400e;
+          border: 1px solid #fde68a;
+        `
+      : css`
+          background-color: #dcfce7;
+          color: #166534;
+          border: 1px solid #bbf7d0;
+        `}
 `;

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getCustomers } from "../../api/customerApi.js";
+import { getCustomers,deleteCustomer } from "../../api/customerApi.js";
 import { GridLoader } from "react-spinners";
 import Logo from "../../assets/Qwipo_logo_img.png";
 import { IoMdSearch } from "react-icons/io";
@@ -19,6 +19,8 @@ import {
   CustomerListPageHeading,
   SortSelect,
   SortOption,
+  AddNewLink,
+  AddCustomerButton,
 } from "./styledComponents.js";
 
 const apiStatusConstants = {
@@ -46,6 +48,10 @@ const CustomerListPage = () => {
   // UI state
   const [currentPage, setCurrentPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState(null);
+  const [deleteMessage, setDeleteMessage] = useState("");
 
   const total = customerList.customerCount ?? 0;
   const totalPages = Math.max(1, Math.ceil((total || 0) / limit) || 1);
@@ -106,6 +112,36 @@ const CustomerListPage = () => {
     },
     [search, sortBy, sortOrder, limit, offset]
   );
+  
+  const confirmDelete = async () => {
+    if (!customerToDelete) return;
+  
+    try {
+      await deleteCustomer(customerToDelete.id);
+  
+      // Remove from list immediately
+      setCustomerList((prev) => ({
+        ...prev,
+        data: prev.data.filter((c) => c.id !== customerToDelete.id),
+        customerCount: prev.customerCount - 1,
+      }));
+  
+      // Show message
+      setDeleteMessage(
+        `${customerToDelete.first_name} ${customerToDelete.last_name} (id: ${customerToDelete.id}) (${customerToDelete.phone_number}) is deleted`
+      );
+  
+      // Hide message after 6 seconds
+      setTimeout(() => setDeleteMessage(""), 6000);
+    } catch (err) {
+      setDeleteMessage("Error deleting customer. Please try again.");
+      setTimeout(() => setDeleteMessage(""), 6000);
+    } finally {
+      setShowDeleteModal(false);
+      setCustomerToDelete(null);
+    }
+  };
+  
 
   // Initial fetch on mount
   useEffect(() => {
@@ -174,6 +210,11 @@ const CustomerListPage = () => {
     }
   };
 
+  const handleDeleteClick = (customer) => {
+    setCustomerToDelete(customer);
+    setShowDeleteModal(true);
+  };
+
   const getVisiblePages = () => {
     if (totalPages <= 3) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -194,7 +235,7 @@ const CustomerListPage = () => {
           </LoaderContainer>
         );
       case apiStatusConstants.success:
-        return <CustomerList customer={data} />;
+        return <CustomerList customer={data} onDelete={handleDeleteClick}/>;
       case apiStatusConstants.failure:
         return (
           <FailureViewContainer>
@@ -243,6 +284,23 @@ const CustomerListPage = () => {
         <SortOption value="DESC">Descending</SortOption>
       </SortSelect>
 
+      <AddNewLink to="/customers/new">
+        <AddCustomerButton>Add New Customer</AddCustomerButton>
+      </AddNewLink>
+
+      {deleteMessage && (
+        <div style={{
+            background: "#fef3c7",
+            color: "#92400e",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            marginBottom: "12px"
+        }}>
+            {deleteMessage}
+        </div>
+    )}
+
+
       {renderCustomerListViews()}
 
       <PaginationContainer>
@@ -282,7 +340,6 @@ const CustomerListPage = () => {
           <IoMdArrowRoundForward size={18} />
         </NextButton>
       </PaginationContainer>
-
       <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
         <p style={{ color: "#6b7280", fontSize: 12 }}>
           {total === 0
@@ -290,6 +347,27 @@ const CustomerListPage = () => {
             : `Showing ${startIdx}–${endIdx} of ${total}`}
         </p>
       </div>
+      {showDeleteModal && (
+        <div style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 1000
+        }}>
+            <div style={{
+                background: "#fff", padding: "20px", borderRadius: "8px",
+                maxWidth: "400px", textAlign: "center"
+            }}>
+                <p>Are you sure you want to delete <strong>
+                {customerToDelete?.first_name} {customerToDelete?.last_name}
+                </strong>?</p>
+                <div style={{ marginTop: "16px", display: "flex", gap: "8px", justifyContent: "center" }}>
+                    <button onClick={confirmDelete} style={{ background: "red", color: "#fff", padding: "6px 12px", borderRadius: "4px" }}>Yes, Delete</button>
+                    <button onClick={() => setShowDeleteModal(false)} style={{ padding: "6px 12px", borderRadius: "4px" }}>Cancel</button>
+                </div>
+            </div>
+        </div>
+    )}
     </CustomerListContainer>
   );
 };
