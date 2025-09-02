@@ -4,7 +4,7 @@ const BASE_URL = 'http://localhost:5000/api';
 
 // Get all customers with optional query parameters
 export const getCustomers = (params = {}) => {
-    return axios.get('http://localhost:5000/api/customers', { params });
+    return axios.get(`${BASE_URL}/customers`, { params });
   };
 
 // Get a customer by ID
