@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/customer-management-app/static/css/main.4055f510.css",
-    "main.js": "/customer-management-app/static/js/main.fced4d36.js",
-    "index.html": "/customer-management-app/index.html",
-    "main.4055f510.css.map": "/customer-management-app/static/css/main.4055f510.css.map",
-    "main.fced4d36.js.map": "/customer-management-app/static/js/main.fced4d36.js.map"
+    "main.css": "/Qwipo_interview_assignment/static/css/main.4055f510.css",
+    "main.js": "/Qwipo_interview_assignment/static/js/main.7bb87fb5.js",
+    "index.html": "/Qwipo_interview_assignment/index.html",
+    "main.4055f510.css.map": "/Qwipo_interview_assignment/static/css/main.4055f510.css.map",
+    "main.7bb87fb5.js.map": "/Qwipo_interview_assignment/static/js/main.7bb87fb5.js.map"
   },
   "entrypoints": [
     "static/css/main.4055f510.css",
-    "static/js/main.fced4d36.js"
+    "static/js/main.7bb87fb5.js"
   ]
 }
