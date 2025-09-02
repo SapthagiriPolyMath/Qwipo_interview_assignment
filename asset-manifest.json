@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/customer-management-app/static/css/main.4055f510.css",
+    "main.js": "/customer-management-app/static/js/main.fced4d36.js",
+    "index.html": "/customer-management-app/index.html",
+    "main.4055f510.css.map": "/customer-management-app/static/css/main.4055f510.css.map",
+    "main.fced4d36.js.map": "/customer-management-app/static/js/main.fced4d36.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.4055f510.css",
+    "static/js/main.fced4d36.js"
+  ]
+}
