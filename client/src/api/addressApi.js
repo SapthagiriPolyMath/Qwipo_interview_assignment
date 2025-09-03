@@ -1,7 +1,7 @@
 // client/src/api/addressApi.js
 import axios from 'axios';
 
-const BASE_URL = 'https://qwipo-interview-assignment.onrender.com';
+const BASE_URL = 'https://qwipo-interview-assignment.onrender.com/api';
 
 // Create a new address for a customer
 export const createAddress = (customerId, data) => {

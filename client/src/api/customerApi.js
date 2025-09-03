@@ -1,6 +1,6 @@
 // customerApi.js
 import axios from 'axios';
-const BASE_URL = 'https://qwipo-interview-assignment.onrender.com';
+const BASE_URL = 'https://qwipo-interview-assignment.onrender.com/api';
 
 // Get all customers with optional query parameters
 export const getCustomers = (params = {}) => {
