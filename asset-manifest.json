@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/Qwipo_interview_assignment/static/css/main.4055f510.css",
-    "main.js": "/Qwipo_interview_assignment/static/js/main.70e81a34.js",
+    "main.js": "/Qwipo_interview_assignment/static/js/main.5af2fd77.js",
     "index.html": "/Qwipo_interview_assignment/index.html",
     "main.4055f510.css.map": "/Qwipo_interview_assignment/static/css/main.4055f510.css.map",
-    "main.70e81a34.js.map": "/Qwipo_interview_assignment/static/js/main.70e81a34.js.map"
+    "main.5af2fd77.js.map": "/Qwipo_interview_assignment/static/js/main.5af2fd77.js.map"
   },
   "entrypoints": [
     "static/css/main.4055f510.css",
-    "static/js/main.70e81a34.js"
+    "static/js/main.5af2fd77.js"
   ]
 }
